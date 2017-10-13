@@ -11,6 +11,20 @@ services:
         - DIGDAG_VERSION=0.9.19
     command: ["sh", "-c", "digdag", "version"]
 
+  digdag-client:
+    <<: *digdag
+    volumes:
+    - .:/etc/digdag
+    networks:
+      - digdag_network
+    external_links:
+      - digdag_server:digdag_server
+    # entrypoint:
+    #   - sh
+    #   - -c
+    #   - digdag
+    command: ["sh", "-c", "digdag", "version"]
+
   digdag-server:
     <<: *digdag
     container_name: "digdag_server"
