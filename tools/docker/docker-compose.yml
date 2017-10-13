@@ -1,0 +1,52 @@
+version: "3.3"
+
+services:
+  digdag: &digdag
+    container_name: "digdag"
+    image: dockerized-digdag
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        - DIGDAG_VERSION=0.9.19
+    command: ["sh", "-c", "digdag", "version"]
+
+  digdag-server:
+    <<: *digdag
+    container_name: "digdag_server"
+    image: dockerized-digdag-server
+    env_file:
+      - .env
+    ports:
+        - "65432:65432"
+    expose:
+      - "65432"
+    # command: ["sh", "-c", "digdag server --memory"]
+    command: ["sh", "-c", "digdag server --bind 0.0.0.0 --port 65432 --config /etc/digdag/digdag.properties --log /var/log/digdag/server --task-log /var/log/digdag/tasks -X database.type=$${DB_TYPE} -X database.user=$${POSTGRES_USER} -X database.password=$${POSTGRES_PASSWORD} -X database.host=$${DB_HOST} -X database.port=$${DB_PORT} -X database.database=$${POSTGRES_DB}"]
+    networks:
+      - digdag_network
+    external_links:
+      - postgres-for-digdag:postgres
+
+  postgres:
+    container_name: "postgres-for-digdag"
+    image: postgres:9.6
+    env_file:
+      - .env
+    ports:
+      - "25432:5432"
+    expose:
+      - "5432"
+    # command: ["-s", "--listen=5432", "--url=postgresql://digdag:@digdag/digdag?sslmode=disable"]
+    networks:
+      - digdag_network
+    # in volumes, you cannot use env vars
+    # volumes:
+    # - /postgres/data:/usr/share/postgres/data:ro
+
+networks:
+  digdag_network:
+    external:
+      name: digdag_network
+  # some_network:
+    # driver: bridge
